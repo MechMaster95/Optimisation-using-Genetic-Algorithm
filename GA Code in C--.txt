@@ -1,0 +1,592 @@
+#include <cstdlib>
+#include <iostream>
+#include <math.h>
+#include <ctime>
+#include <fstream>
+
+using namespace std;
+
+double* weigh(double length, double breadth, double thickness, double density1, double density2, double density3, double population1[2][5]) { //This function calculates the weight of each ply and returns it in an array
+    int y; //Looping Variable
+    double *w = new double[5];  //Weight Array
+    for (y = 0; y <= 4; y++) {
+        if (population1[0][y] == 0) {
+            w[y] = (length * breadth * thickness * density1 * 9.8);
+
+        } else if (population1[0][y] == 1) {
+            w[y] = (length * breadth * thickness * density2 * 9.8);
+        } else if (population1[0][y] == 2) {
+            w[y] = (length * breadth * thickness * density3 * 9.8);
+        }
+    }
+    return w;
+}
+
+double* cost(double length, double breadth, double thickness, double FactorMaterial1, double FactorMaterial2, double FactorMaterial3, double FactorLayup0, double FactorLayup45, double FactorLayup90, double population1[2][5]) {  //This function calculates the total cost of each ply in an array
+    int x;  //Looping Variable
+    int y;  //Looping Variable
+    double *CostMaterial = new double[5];
+    double *CostLayup = new double[5];
+    double *CostTotal = new double[5];
+    for (y = 0; y <= 4; y++) {
+        x = 0;
+        if (population1[x][y] == 0 && population1[x + 1][y] == 0) {
+            CostMaterial[y] = (length * breadth * thickness * FactorMaterial1);
+            CostLayup[y] = (length * breadth * thickness * FactorLayup0);
+        } else if (population1[x][y] == 0 && population1[x + 1][y] == 1) {
+            CostMaterial[y] = (length * breadth * thickness * FactorMaterial1);
+            CostLayup[y] = (length * breadth * thickness * FactorLayup45);
+        } else if (population1[x][y] == 0 && population1[x + 1][y] == 2) {
+            CostMaterial[y] = (length * breadth * thickness * FactorMaterial1);
+            CostLayup[y] = (length * breadth * thickness * FactorLayup90);
+        } else if (population1[x][y] == 1 && population1[x + 1][y] == 0) {
+            CostMaterial[y] = (length * breadth * thickness * FactorMaterial2);
+            CostLayup[y] = (length * breadth * thickness * FactorLayup0);
+        } else if (population1[x][y] == 1 && population1[x + 1][y] == 1) {
+            CostMaterial[y] = (length * breadth * thickness * FactorMaterial2);
+            CostLayup[y] = (length * breadth * thickness * FactorLayup45);
+        } else if (population1[x][y] == 1 && population1[x + 1][y] == 2) {
+            CostMaterial[y] = (length * breadth * thickness * FactorMaterial2);
+            CostLayup[y] = (length * breadth * thickness * FactorLayup90);
+        } else if (population1[x][y] == 2 && population1[x + 1][y] == 0) {
+            CostMaterial[y] = (length * breadth * thickness * FactorMaterial3);
+            CostLayup[y] = (length * breadth * thickness * FactorLayup0);
+        } else if (population1[x][y] == 2 && population1[x + 1][y] == 1) {
+            CostMaterial[y] = (length * breadth * thickness * FactorMaterial3);
+            CostLayup[y] = (length * breadth * thickness * FactorLayup45);
+        } else if (population1[x][y] == 2 && population1[x + 1][y] == 2) {
+            CostMaterial[y] = (length * breadth * thickness * FactorMaterial3);
+            CostLayup[y] = (length * breadth * thickness * FactorLayup90);
+        }
+        CostTotal[y] = CostMaterial[y] + CostLayup[y];
+    }
+    return CostTotal;
+
+}
+
+double* tsai(double f10, double f110, double f20, double f220, double f660, double f120, double f11, double f111, double f21, double f221, double f661, double f121, double f12, double f112, double f22, double f222, double f662, double f122, double s1, double s2, double s3,double slp0,double stp0, double slt0, double slp1, double stp1, double slt1, double slp2, double stp2, double slt2 ,double population1[2][5]) {  //This function checks the Tsai-Wu-Hahn failure criterion and calculates the right hand side expression and returns in an array
+    int x,y;//Looping Variable
+    double *f = new double[5];  //LHS of failure criterion
+    for (y = 0; y <= 4; y++) {
+        x=0;
+        if (population1[x][y] == 0 && population1[x + 1][y] == 0) {
+            f[y] = ((f10*s1)+(f20*s2)+(f110*s1*s1)+(f220*s2*s2)+(2*f120*s1*s2)+(f660*s3*s3));
+        } else if (population1[x][y] == 0 && population1[x + 1][y] == 1) {
+            f[y]= ((s1*0.5)/slp0)-((s1*s1*0.0625)/slp0)+(((s1*0.5)/stp0)*((s1*0.5)/stp0))+(((s1*0.5)/slt0)*((s1*0.5)/slt0));
+        } else if (population1[x][y] == 0 && population1[x + 1][y] == 2) {
+            f[y] = ((f10*s1)+(f20*s2)+(f110*s1*s1)+(f220*s2*s2)+(2*f120*s1*s2)+(f660*s3*s3));
+        } else if (population1[x][y] == 1 && population1[x + 1][y] == 0) {
+            f[y] = ((f11*s1)+(f21*s2)+(f111*s1*s1)+(f221*s2*s2)+(2*f121*s1*s2)+(f661*s3*s3));
+        } else if (population1[x][y] == 1 && population1[x + 1][y] == 1) {
+            f[y]= ((s1*0.5)/slp1)-((s1*s1*0.0625)/slp1)+(((s1*0.5)/stp1)*((s1*0.5)/stp1))+(((s1*0.5)/slt1)*((s1*0.5)/slt1));
+        } else if (population1[x][y] == 1 && population1[x + 1][y] == 2) {
+           f[y] = ((f11*s1)+(f21*s2)+(f111*s1*s1)+(f221*s2*s2)+(2*f121*s1*s2)+(f661*s3*s3));
+        } else if (population1[x][y] == 2 && population1[x + 1][y] == 0) {
+            f[y] = ((f12*s1)+(f22*s2)+(f112*s1*s1)+(f222*s2*s2)+(2*f122*s1*s2)+(f662*s3*s3));
+        } else if (population1[x][y] == 2 && population1[x + 1][y] == 1) {
+            f[y]= ((s1*0.5)/slp2)-((s1*s1*0.0625)/slp2)+(((s1*0.5)/stp2)*((s1*0.5)/stp2))+(((s1*0.5)/slt2)*((s1*0.5)/slt2));
+        } else if (population1[x][y] == 2 && population1[x + 1][y] == 2) {
+            f[y] = ((f12*s1)+(f22*s2)+(f112*s1*s1)+(f222*s2*s2)+(2*f122*s1*s2)+(f662*s3*s3));
+        }
+    }
+
+    return f;
+}
+
+double* fitnessweight(double AverageWeight, double f[5], double weight[5]) {  //This function calculates the fitness function value with respect to weight
+    double margin[5];  //Calculates how safe or unsafe the ply is by calculating how far the RHS of failure criterion is from 1.
+    int i;  //Looping Variable
+    double* FitnessWeight = new double[5];
+    for (i = 0; i <= 5; i++)
+    {
+        margin[i] = (1 / sqrt(f[i])) - 1;
+    }
+    for (i = 0; i <= 5; i++) {
+        if (f[i] < 1) {
+            FitnessWeight[i] = weight[i]-(AverageWeight * margin[i]);
+        } else {
+            FitnessWeight[i] = weight[i]*(100 - margin[i])*(500 - margin[i]);
+        }
+    }
+
+    return FitnessWeight;
+}
+
+double* fitnesscost(double AverageCostMaterial, double AverageCostLayup, double f[5], double CostTotal[5]) { // This function calculates the fitness function value with respect to cost
+    double margin[5];
+    int i; 
+    double* FitnessCost = new double[5];
+    for (i = 0; i <= 5; i++) {
+        margin[i] = (1 / sqrt(f[i])) - 1;
+    }
+    for (i = 0; i <= 5; i++) {
+        if (f[i] < 1) {
+            FitnessCost[i] = CostTotal[i]-((AverageCostMaterial + AverageCostLayup) * margin[i]);
+        } else {
+            FitnessCost[i] = CostTotal[i]*(100 - margin[i])*(500 - margin[i]);
+        }
+    }
+
+    return FitnessCost;
+}
+
+double** mutation(double population1[2][5]) {  //Performs mutation operation
+
+    int x;  //Random Position
+    int y;  //Random Position
+    int k;  //Random Coded Variable
+    int l;
+    double** Population2 = 0;
+    Population2 = new double*[2];
+    for (l = 0; l <= 1; l++) {
+        x = rand() % 2;
+        y = rand() % 5;
+        k = rand() % 3;
+        population1[x][y] = k;
+
+    }
+    for (int i = 0; i <= 1; i++) {
+        Population2[i] = new double[5];
+        for (int j = 0; j <= 4; j++) {
+            Population2[i][j] = population1[i][j];
+        }
+        cout << endl;
+    }
+    return Population2;
+}
+
+double** crossover(double l[2][5], double population1[2][5]) {  //Performs Crossover operation
+    int Column;
+    Column = rand() % 4;
+    double** child = 0;
+    int i, j; // Looping Variable
+    child = new double*[2];
+    for (i = 0; i <= 1; i++) {
+        child[i] = new double[5];
+        for (j = 0; j <= 4; j++) {
+            if (j < Column) {
+                child[i][j] = population1[i][j];
+            } else if (j >= Column) {
+                child[i][j] = l[i][j];
+            }
+        }
+    }
+    return child;
+}
+
+double* fitnesslaminate(double FitnessCost[5], double FitnessWeight[5], double alpha) {  //Calculates the fitness of each laminate as a combination of Weight Fitness and Cost Fitness
+    int i;
+    double* FitnessLaminate = new double[5];
+    for (i = 0; i <= 4; i++) {
+        FitnessLaminate[i] = (alpha * FitnessCost[i])+((1 - alpha) * FitnessWeight[i]);
+    }
+    return FitnessLaminate;
+}
+
+double** elitist(double Elitist1[3][5], double Elitist2[3][5]) { //Performs Multiple Elitist Selection 3 with  
+    double** combine = 0;
+    int x;
+    int y;
+    combine = new double*[3];
+    for (x = 0; x <= 2; x++) {
+        combine[x] = new double[10];
+        for (y = 0; y <= 9; y++) {
+            if (y <= 4) {
+                combine[x][y] = Elitist1[x][y];
+            } else {
+                combine[x][y] = Elitist2[x][y - 4];
+            }
+        }
+    }
+    for (x = 0; x < 9; x++) {
+        for (y = x + 1; y < 10; y++) {
+            if (combine[2][x] > combine[2][y]) {
+                double temp = combine[0][x];
+                combine[0][x] = combine[0][y];
+                combine[0][y] = temp;
+                temp = combine[1][x];
+                combine[1][x] = combine[1][y];
+                combine[1][y] = temp;
+                temp = combine[2][x];
+                combine[2][x] = combine[2][y];
+                combine[2][y] = temp;
+            }
+        }
+    }
+    for (x = 0; x < 4; x++) {
+        for (y = x + 1; y < 5; y++) {
+            if (Elitist2[2][x] > Elitist2[2][y]) {
+                double temp = Elitist2[0][x];
+                Elitist2[0][x] = Elitist2[0][y];
+                Elitist2[0][y] = temp;
+                temp = Elitist2[1][x];
+                Elitist2[1][x] = Elitist2[1][y];
+                Elitist2[1][y] = temp;
+                temp = Elitist2[2][x];
+                Elitist2[2][x] = Elitist2[2][y];
+                Elitist2[2][y] = temp;
+            }
+        }
+
+    }
+
+    double** elitist = 0;
+    elitist = new double*[3];
+    for (x = 0; x <= 2; x++) {
+        elitist[x] = new double[5];
+        for (y = 0; y <= 4; y++) {
+            if (y < 3) {
+                elitist[x][y] = combine[x][y];
+            } else {
+                elitist[x][y] = Elitist2[x][y - 3];
+            }
+        }
+    }
+    return elitist;
+}
+
+int main() {
+    double population1[2][5] = {0};
+    double population2[2][5] = {0};
+    double Population3[2][5] = {0};
+    double Population4[2][5] = {0};
+    double Population5[2][5] = {0};
+    double Elitist1[3][5] = {0};
+    double Elitist2[3][5] = {0};
+    int x;
+    int y;
+    double FactorMaterial1;
+    double FactorMaterial2;
+    double FactorMaterial3;
+    double FactorLayup0;
+    double FactorLayup45;
+    double FactorLayup90;
+    double length;
+    double breadth;
+    double thickness;
+    double density1;
+    double density2;
+    double density3;
+    double* WeightMutation = new double[5];
+    double* TotalCostMutation = new double[5];
+    double* WeightCrossover = new double[5];
+    double* TotalCostCrossover = new double[5];
+    double* WeightElitist = new double[5];
+    double* TotalCostElitist = new double[5];
+    double* Weight = new double[5];
+    double* TotalCost = new double[5];
+    
+    double AverageWeight;
+    double AverageCostLayup;
+    double AverageCostMaterial;
+    double alpha;
+    int n;
+    int g = 0;
+    double slp0;
+    double sln0;
+    double stp0;
+    double stn0;
+    double slt0;
+    double f10;
+    double f110;
+    double f20;
+    double f220;
+    double f120;
+    double f660;
+
+    double slp1;
+    double sln1;
+    double stp1;
+    double stn1;
+    double slt1;
+    double f11;
+    double f111;
+    double f21;
+    double f221;
+    double f121;
+    double f661;
+
+    double slp2;
+    double sln2;
+    double stp2;
+    double stn2;
+    double slt2;
+    double f12;
+    double f112;
+    double f22;
+    double f222;
+    double f122;
+    double f662;
+
+    double s1;
+    double s2;
+    double s3;
+
+    double* TsaiMutation = new double[5];
+    double* TsaiCrossover = new double[5];
+    double* TsaiElitist = new double[5];
+    
+    double* Tsai = new double[5];
+    int i;
+    double* FitnessWeightMutation = new double[5];
+    double* FitnessWeightCrossover = new double[5];
+    double* FitnessCostMutation = new double[5];
+    double* FitnessCostCrossover = new double[5];
+    double** CrossoverVariable;
+    double** MutationVariable;
+    double* FitnessLaminateMutation = new double[5];
+    double* FitnessLaminateCrossover = new double[5];
+    double** ElitistVariable;
+    
+    double OverallWeight=0;
+    double OverallCost=0;
+    double OverallWeightElitist=0;
+    double OverallCostElitist=0;
+
+    fstream ofp;
+    // file name
+    ofp.open("C:/Users/admin/Desktop/Results.txt", ios::out);
+    ofp << "Population Matrix: " << endl;
+    srand(time(0));
+    for (x = 0; x <= 1; x++) {
+        for (y = 0; y <= 4; y++) {
+
+            population1[x][y] = (population1[x][y]) + rand() % 3;
+            ofp << population1[x][y];
+            ofp << " ";
+
+        }
+        ofp << endl;
+    }
+    ofp << endl << endl;
+
+    cout << "Enter the required number of generations";
+    cin >> n;
+
+    cout << "Enter the required weight for laminate fitness function ";
+    cin >> alpha;
+
+    cout << "Enter the material cost factor for 3 materials respectively";
+    cin >> FactorMaterial1 >> FactorMaterial2 >> FactorMaterial3;
+    cout << "Enter the layup cost factor for 0, 45 and 90 degrees orientation respectively";
+    cin >> FactorLayup0 >> FactorLayup45 >> FactorLayup90;
+    cout << "Enter the plate length, breadth and height respectively";
+    cin >> length >> breadth >> thickness;
+    cout << "Enter the densities of 3 materials respectively";
+    cin >> density1 >> density2 >> density3;
+
+
+    cout << "Enter the material properties of material 1 in the following order"
+            "\n Longitudinal Strength in Tension"
+            "\n Longitudinal Strength in Compression"
+            "\n Transverse Strength in Tension"
+            "\n Transverse Strength in Compression"
+            "\n Shear Strength ";
+    cin >> slp0 >> sln0 >> stp0 >> stn0 >> slt0;
+
+    cout << "Enter the material properties of material 2 in the following order"
+            "\n Longitudinal Strength in Tension"
+            "\n Longitudinal Strength in Compression"
+            "\n Transverse Strength in Tension"
+            "\n Transverse Strength in Compression"
+            "\n Shear Strength ";
+
+    cin >> slp1 >> sln1 >> stp1 >> stn1 >> slt1;
+
+    cout << "Enter the material properties of material 3 in the following order"
+            "\n Longitudinal Strength in Tension"
+            "\n Longitudinal Strength in Compression"
+            "\n Transverse Strength in Tension"
+            "\n Transverse Strength in Compression"
+            "\n Shear Strength ";
+
+    cin >> slp2 >> sln2 >> stp2 >> stn2 >> slt2;
+
+    cout << "Enter the Longitudinal Stress, Transverse Stress and In Plane Shear Stress respectively";
+    cin >> s1 >> s2 >> s3;
+
+    f10 = ((1/slp0)-(1/sln0));
+    f110 = (1/(slp0*sln0));
+    f20 = ((1/stp0)-(1/stn0));
+    f220 = (1/(stp0*stn0));
+    f660 = (1/(slt0*slt0));
+    f120 = -(sqrt(f110*f220)/2);
+
+    f11 = ((1/slp1)-(1/sln1));
+    f111 = (1/(slp1 * sln1));
+    f21 = ((1/stp1)-(1/stn1));
+    f221 = (1/(stp1*stn1));
+    f661 = (1/(slt1 * slt1));
+    f121 = -(sqrt(f111*f221)/2);
+
+    f12 = ((1/slp2)-(1/sln2));
+    f112 = (1/(slp2*sln2));
+    f22 = ((1/stp2)-(1/stn2));
+    f222 = (1/(stp2 * stn2));
+    f662 = (1/(slt2 * slt2));
+    f122 = -(sqrt(f112*f222) / 2);
+
+    AverageWeight = (length * breadth * thickness * (density1 + density2 + density3)) / 3;
+    AverageCostLayup = (FactorLayup0 + FactorLayup45 + FactorLayup90) / 3;
+    AverageCostMaterial = (FactorMaterial1 + FactorMaterial2 + FactorMaterial3) / 3;
+
+
+    do {
+        ofp << "Loop: " << (g + 1) << endl;
+        for (x = 0; x <= 1; x++) {
+            for (y = 0; y <= 4; y++) {
+                population2[x][y] = population1[x][y];
+            }
+        }
+        ofp << endl << "Weight:" << endl;
+        Weight = weigh(length, breadth, thickness, density1, density2, density3, population2);
+        for (i = 0; i <= 4; i++) {
+            ofp << Weight[i] << endl;
+            OverallWeight= OverallWeight+Weight[i];
+        }
+        ofp << OverallWeight<< endl;
+        
+        TotalCost = cost(length, breadth, thickness, FactorMaterial1, FactorMaterial2, FactorMaterial3, FactorLayup0, FactorLayup45, FactorLayup90, population2);
+        ofp << endl << "Total Cost:" << endl;
+        for (i = 0; i <= 4; i++) {
+            ofp << TotalCost[i] << endl;
+            OverallCost= OverallCost+TotalCost[i];
+        }
+        ofp << OverallCost << endl;
+        
+        Tsai = tsai(f10, f110, f20, f220, f660, f120, f11, f111, f21, f221, f661, f121, f12, f112, f22, f222, f662, f122, s1, s2, s3,slp0,stp0,slt0,slp1,stp1,slt1,slp2,stp2,slt2,population2);
+
+        ofp << endl << "f:" << endl;
+        for (i = 0; i <= 4; i++) {
+            ofp << Tsai[i] << endl;
+        }
+
+        MutationVariable = mutation(population1);
+
+        for (x = 0; x <= 1; x++) {
+            for (y = 0; y <= 4; y++) {
+                Population3[x][y] = MutationVariable[x][y];
+                ofp << MutationVariable[x][y] << " ";
+            }
+            ofp << endl;
+        }
+
+       // ofp << endl << "Weight:" << endl;
+        WeightMutation = weigh(length, breadth, thickness, density1, density2, density3, Population3);
+       /* for (i = 0; i <= 4; i++) {
+            ofp << WeightMutation[i] << endl;
+        } */
+
+        TotalCostMutation = cost(length, breadth, thickness, FactorMaterial1, FactorMaterial2, FactorMaterial3, FactorLayup0, FactorLayup45, FactorLayup90, Population3);
+       /* ofp << endl << "Total Cost:" << endl;
+        for (i = 0; i <= 4; i++) {
+            ofp << TotalCostMutation[i] << endl;
+        }*/
+
+        TsaiMutation = tsai(f10, f110, f20, f220, f660, f120, f11, f111, f21, f221, f661, f121, f12, f112, f22, f222, f662, f122, s1, s2, s3,slp0,stp0,slt0,slp1,stp1,slt1,slp2,stp2,slt2,Population3);
+
+       /* ofp << endl << "f:" << endl;
+        for (i = 0; i <= 4; i++) {
+            ofp << TsaiMutation[i] << endl;
+        } */
+
+        FitnessWeightMutation = fitnessweight(AverageWeight, TsaiMutation, WeightMutation);
+        FitnessCostMutation = fitnesscost(AverageCostMaterial, AverageCostLayup, TsaiMutation, TotalCostMutation);
+        FitnessLaminateMutation = fitnesslaminate(FitnessCostMutation, FitnessWeightMutation, alpha);
+
+        for (x = 0; x <= 2; x++) {
+            for (y = 0; y <= 4; y++) {
+                if (x <= 1) {
+                    Elitist1[x][y] = Population3[x][y];
+                } else if (x == 2) {
+                    Elitist1[x][y] = FitnessLaminateMutation[x];
+                }
+            }
+        }
+
+
+        CrossoverVariable = crossover(Population3, population1);
+        ofp << endl;
+        for (x = 0; x <= 1; x++) {
+            for (y = 0; y <= 4; y++) {
+                Population4[x][y] = CrossoverVariable[x][y];
+                ofp << CrossoverVariable[x][y] << " ";
+            }
+            ofp << endl;
+        }
+
+       //  ofp << endl << "Weight:" << endl;
+        WeightCrossover = weigh(length, breadth, thickness, density1, density2, density3, Population4);
+        /*for (i = 0; i <= 4; i++) {
+            ofp << WeightCrossover[i] << endl;
+        }*/
+
+      //  ofp << endl << "Total Cost:" << endl;
+        TotalCostCrossover = cost(length, breadth, thickness, FactorMaterial1, FactorMaterial2, FactorMaterial3, FactorLayup0, FactorLayup45, FactorLayup90, Population4);
+      /*  for (i = 0; i <= 4; i++) {
+            ofp << TotalCostCrossover[i] << endl;
+        } */
+
+        TsaiCrossover = tsai(f10, f110, f20, f220, f660, f120, f11, f111, f21, f221, f661, f121, f12, f112, f22, f222, f662, f122, s1, s2, s3,slp0,stp0,slt0,slp1,stp1,slt1,slp2,stp2,slt2,Population4);
+
+       // ofp << endl << "f:" << endl;
+        /* for (i = 0; i <= 4; i++) {
+            ofp << TsaiCrossover[i] << endl;
+        }*/
+
+        FitnessWeightCrossover = fitnessweight(AverageWeight, TsaiCrossover, WeightCrossover);
+        FitnessCostCrossover = fitnesscost(AverageCostMaterial, AverageCostLayup, TsaiCrossover, TotalCostCrossover);
+        FitnessLaminateCrossover = fitnesslaminate(FitnessCostCrossover, FitnessWeightCrossover, alpha);
+
+        for (x = 0; x <= 2; x++) {
+            for (y = 0; y <= 4; y++) {
+                if (x <= 1) {
+                    Elitist2[x][y] = Population4[x][y];
+                } else if (x == 2) {
+                    Elitist2[x][y] = FitnessLaminateCrossover[x];
+                }
+            }
+        }
+
+        ElitistVariable = elitist(Elitist1, Elitist2);
+        ofp << endl;
+        for (x = 0; x <= 1; x++) {
+            for (y = 0; y <= 4; y++) {
+                Population5[x][y]=ElitistVariable[x][y];
+                ofp << ElitistVariable[x][y] << " ";
+            }
+            ofp << endl;
+        }
+
+        WeightElitist = weigh(length, breadth, thickness, density1, density2, density3, Population5);
+        for (i = 0; i <= 4; i++) {
+            ofp << WeightElitist[i] << endl;
+            OverallWeightElitist= OverallWeightElitist+WeightElitist[i];
+        }
+        ofp << OverallWeightElitist;
+
+        TotalCostElitist = cost(length, breadth, thickness, FactorMaterial1, FactorMaterial2, FactorMaterial3, FactorLayup0, FactorLayup45, FactorLayup90, Population5);
+        
+        ofp << endl << "Total Cost:" << endl;
+        for (i = 0; i <= 4; i++) {
+            ofp << TotalCostElitist[i] << endl;
+            OverallCostElitist= OverallCostElitist+TotalCostElitist[i];
+           }
+        ofp << OverallCostElitist << endl;
+
+        TsaiElitist = tsai(f10, f110, f20, f220, f660, f120, f11, f111, f21, f221, f661, f121, f12, f112, f22, f222, f662, f122, s1, s2, s3,slp0,stp0,slt0,slp1,stp1,slt1,slp2,stp2,slt2,Population5);
+
+        ofp << endl << "f:" << endl;
+        for (i = 0; i <= 4; i++) {
+            ofp << TsaiElitist[i] << endl;
+        }
+        
+        
+        g++;
+        ofp << endl;
+    } while (g < n);
+
+    ofp.close();
+
+    return 0;
+}
